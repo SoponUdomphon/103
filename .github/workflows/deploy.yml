@@ -1,20 +1,22 @@
-    name: Deploy to GitHub Pages
+name: Deploy to GitHub Pages
     on:
       push:
         branches:
           - main  # Or your primary branch
-    jobs:
-      deploy:
-        runs-on: ubuntu-latest
-        steps:
-          - name: Checkout code
-            uses: actions/checkout@v4
-          - name: Set up Node.js
-            uses: actions/setup-node@v4
-            with:
-              node-version: '18' # Or your desired Node.js version
-          - name: Install dependencies
-            run: npm install
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4 # Essential: Checks out your repository
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # Or '20', or whatever version your project needs
+
+      - name: Install dependencies
+        run: npm install
+        working-directory: ./frontend # <--- THIS IS THE FIX! Point to the directory containing package.json
           - name: Run build
             run: npm run build
           - name: Deploy to gh-pages
