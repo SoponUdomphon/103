@@ -1,26 +1,47 @@
 name: Deploy to GitHub Pages
-    on:
-      push:
-        branches:
-          - main  # Or your primary branch
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4 # Essential: Checks out your repository
 
-      - name: Setup Node.js
+on:
+  push:
+    branches:
+      - main # Trigger the workflow on pushes to the 'main' branch
+    paths:
+      - 'frontend/**' # Only run if changes occur in the 'frontend' directory (adjust if your project is elsewhere)
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest # Use the latest Ubuntu runner
+
+    steps:
+      - name: Checkout repository # Step 1: Checkout your code
+        uses: actions/checkout@v4
+        with:
+          # Important for actions-gh-pages if you need to push to a different branch
+          # or if your repository is private and the GITHUB_TOKEN has limited permissions.
+          # If you face issues, you might need to fetch all history:
+          # fetch-depth: 0
+
+      - name: Setup Node.js environment # Step 2: Set up Node.js for npm commands
         uses: actions/setup-node@v4
         with:
-          node-version: '18' # Or '20', or whatever version your project needs
+          node-version: '18' # Specify the Node.js version your project uses (e.g., '18', '20')
 
-      - name: Install dependencies
-        run: npm install
-        working-directory: ./frontend # <--- THIS IS THE FIX! Point to the directory containing package.json
-          - name: Run build
-            run: npm run build
-          - name: Deploy to gh-pages
-            uses: peaceiris/actions-gh-pages@v4
-            with:
-              github_token: ${{ secrets.GITHUB_TOKEN }}
-              publish_dir: ./build
+      - name: Install dependencies # Step 3: Install project dependencies
+        run: npm ci # 'npm ci' is preferred in CI/CD for clean installs
+        working-directory: ./frontend # <--- IMPORTANT: Change './frontend' to your project's subdirectory if different!
+        # Example: if package.json is in the root, remove this line or set it to '.'
+
+      - name: Build project # Step 4: Build your project
+        run: npm run build # Adjust this command if your build script is different (e.g., 'yarn build')
+        working-directory: ./frontend # <--- IMPORTANT: Change './frontend' to your project's subdirectory if different!
+        # This assumes your build command should also run from this directory.
+
+      - name: Deploy to GitHub Pages # Step 5: Deploy the built project to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4 # Use the working v4 of the action
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }} # Automatically provided token for GitHub Actions
+          publish_dir: ./frontend/dist # <--- IMPORTANT: Change this to the path where your build output is located!
+          # This path is relative to the root of your repository (e.g., if build output is in 'frontend/dist').
+          # Common build output directories are 'dist', 'build', 'out'.
+          publish_branch: gh-pages # The branch where your GitHub Pages site will be deployed (default: gh-pages)
+          # cname: your.custom.domain # Uncomment and set your custom domain if applicable
+          # enable_jekyll: true # Uncomment if you want GitHub Pages to process with Jekyll (default: false, adds .nojekyll)
